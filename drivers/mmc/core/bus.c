@@ -145,16 +145,13 @@ static void mmc_bus_shutdown(struct device *dev)
 #ifdef CONFIG_PM_SLEEP
 static int mmc_bus_suspend(struct device *dev)
 {
-	struct mmc_driver *drv = to_mmc_driver(dev->driver);
 	struct mmc_card *card = mmc_dev_to_card(dev);
 	struct mmc_host *host = card->host;
 	int ret;
 
-	if (dev->driver && drv->suspend) {
-		ret = drv->suspend(card);
-		if (ret)
-			return ret;
-	}
+	ret = pm_generic_suspend(dev);
+	if (ret)
+		return ret;
 
     if (mmc_bus_needs_resume(host))
 		return 0;
@@ -165,7 +162,6 @@ static int mmc_bus_suspend(struct device *dev)
 
 static int mmc_bus_resume(struct device *dev)
 {
-	struct mmc_driver *drv = to_mmc_driver(dev->driver);
 	struct mmc_card *card = mmc_dev_to_card(dev);
 	struct mmc_host *host = card->host;
 	int ret;
@@ -179,9 +175,7 @@ static int mmc_bus_resume(struct device *dev)
 				mmc_hostname(host), ret);
 	}
 
-	if (dev->driver && drv->resume)
-		ret = drv->resume(card);
-
+	ret = pm_generic_resume(dev);
 	return ret;
 }
 #endif

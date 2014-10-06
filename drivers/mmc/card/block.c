@@ -2454,8 +2454,9 @@ static const struct mmc_fixup blk_fixups[] =
 	END_FIXUP
 };
 
-static int mmc_blk_probe(struct mmc_card *card)
+static int mmc_blk_probe(struct device *dev)
 {
+	struct mmc_card *card = mmc_dev_to_card(dev);
 	struct mmc_blk_data *md, *part_md;
 	char cap_str[10];
 
@@ -2515,8 +2516,9 @@ static int mmc_blk_probe(struct mmc_card *card)
 	return 0;
 }
 
-static void mmc_blk_remove(struct mmc_card *card)
+static int mmc_blk_remove(struct device *dev)
 {
+	struct mmc_card *card = mmc_dev_to_card(dev);
 	struct mmc_blk_data *md = mmc_get_drvdata(card);
 
 	mmc_blk_remove_parts(card, md);
@@ -2529,11 +2531,14 @@ static void mmc_blk_remove(struct mmc_card *card)
 	pm_runtime_put_noidle(&card->dev);
 	mmc_blk_remove_req(md);
 	mmc_set_drvdata(card, NULL);
+
+	return 0;
 }
 
-static void mmc_blk_shutdown(struct mmc_card *card)
+static void mmc_blk_shutdown(struct device *dev)
 {
 	struct mmc_blk_data *part_md;
+	struct mmc_card *card = mmc_dev_to_card(dev);
 	struct mmc_blk_data *md = mmc_get_drvdata(card);
 
 	if (md) {
@@ -2549,7 +2554,6 @@ static int mmc_blk_suspend(struct device *dev)
 {
 	struct mmc_blk_data *part_md;
 	struct mmc_blk_data *md = mmc_get_drvdata(card);
-	struct mmc_card *card = mmc_dev_to_card(dev);
 	int rc = 0;
 
 	if (md) {
@@ -2595,11 +2599,9 @@ static int mmc_blk_resume(struct device *dev)
 
 static SIMPLE_DEV_PM_OPS(mmc_blk_pm_ops, mmc_blk_suspend, mmc_blk_resume);
 
-static struct mmc_driver mmc_driver = {
-	.drv		= {
-		.name	= "mmcblk",
-		.pm	= &mmc_blk_pm_ops,
-	},
+static struct device_driver mmc_driver = {
+	.name		= "mmcblk",
+	.pm		= &mmc_blk_pm_ops,
 	.probe		= mmc_blk_probe,
 	.remove		= mmc_blk_remove,
 	.shutdown	= mmc_blk_shutdown,

@@ -1870,11 +1870,6 @@ struct mount *copy_tree(struct mount *mnt, struct dentry *dentry,
 	if (IS_ERR(q))
 		return q;
 
-#ifdef CONFIG_RKP_NS_PROT
-	rkp_reset_mnt_flags(q->mnt,MNT_LOCKED);
-#else
-	q->mnt.mnt_flags &= ~MNT_LOCKED;
-#endif
 	q->mnt_mountpoint = mnt->mnt_mountpoint;
 
 	p = mnt;

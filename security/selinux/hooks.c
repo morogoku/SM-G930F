@@ -172,8 +172,6 @@ unsigned int rkp_get_offset_bp_cred(void)
 }
 #endif  /* CONFIG_RKP_KDP */
 
-extern struct security_operations *security_ops;
-
 /* SECMARK reference count */
 static atomic_t selinux_secmark_refcount = ATOMIC_INIT(0);
 

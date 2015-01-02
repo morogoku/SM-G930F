@@ -1584,29 +1584,22 @@ static void handle_update(struct work_struct *work)
 /**
  *	cpufreq_out_of_sync - If actual and saved CPU frequency differs, we're
  *	in deep trouble.
- *	@cpu: cpu number
- *	@old_freq: CPU frequency the kernel thinks the CPU runs at
+ *	@policy: policy managing CPUs
  *	@new_freq: CPU frequency the CPU actually runs at
  *
  *	We adjust to current frequency first, and need to clean up later.
  *	So either call to cpufreq_update_policy() or schedule handle_update()).
  */
-static void cpufreq_out_of_sync(unsigned int cpu, unsigned int old_freq,
+static void cpufreq_out_of_sync(struct cpufreq_policy *policy,
 				unsigned int new_freq)
 {
-	struct cpufreq_policy *policy;
 	struct cpufreq_freqs freqs;
-	unsigned long flags;
 
 	pr_debug("Warning: CPU frequency out of sync: cpufreq and timing core thinks of %u, is %u kHz\n",
-		 old_freq, new_freq);
+		 policy->cur, new_freq);
 
-	freqs.old = old_freq;
+	freqs.old = policy->cur;
 	freqs.new = new_freq;
-
-	read_lock_irqsave(&cpufreq_driver_lock, flags);
-	policy = per_cpu(cpufreq_cpu_data, cpu);
-	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
 	cpufreq_freq_transition_begin(policy, &freqs);
 	cpufreq_freq_transition_end(policy, &freqs, 0);
@@ -1672,7 +1665,7 @@ static unsigned int __cpufreq_get(unsigned int cpu)
 		/* verify no discrepancy between actual and
 					saved value exists */
 		if (unlikely(ret_freq != policy->cur)) {
-			cpufreq_out_of_sync(cpu, policy->cur, ret_freq);
+			cpufreq_out_of_sync(policy, ret_freq);
 			schedule_work(&policy->update);
 		}
 	}
@@ -2390,8 +2383,7 @@ int cpufreq_update_policy(unsigned int cpu)
 			policy->cur = new_policy.cur;
 		} else {
 			if (policy->cur != new_policy.cur && has_target())
-				cpufreq_out_of_sync(cpu, policy->cur,
-								new_policy.cur);
+				cpufreq_out_of_sync(policy, new_policy.cur);
 		}
 	}
 

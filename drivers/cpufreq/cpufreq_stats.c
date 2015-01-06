@@ -68,13 +68,10 @@ static int cpufreq_stats_update(struct cpufreq_stats *stats)
 		spin_unlock(&cpufreq_stats_lock);
 		return 0;
 	}
-	if (stats->time_in_state) {
-		stats->time_in_state[stats->last_index] +=
-			cur_time - stats->last_time;
-		if (all_stat)
-			all_stat->time_in_state[stats->last_index] +=
-					cur_time - stats->last_time;
-	}
+	stats->time_in_state[stats->last_index] += cur_time - stats->last_time;
+	if (all_stat)
+		all_stat->time_in_state[stats->last_index] +=
+				cur_time - stats->last_time;
 	stats->last_time = cur_time;
 	spin_unlock(&cpufreq_stats_lock);
 	return 0;

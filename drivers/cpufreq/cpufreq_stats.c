@@ -57,14 +57,12 @@ static DEFINE_PER_CPU(struct all_cpufreq_stats *, all_cpufreq_stats);
 static DEFINE_PER_CPU(struct cpufreq_stats *, cpufreq_stats_table);
 static DEFINE_PER_CPU(struct cpufreq_power_stats *, cpufreq_power_stats);
 
-static int cpufreq_stats_update(unsigned int cpu)
+static int cpufreq_stats_update(struct cpufreq_stats *stat)
 {
-	struct cpufreq_stats *stat;
 	struct all_cpufreq_stats *all_stat;
 	unsigned long long cur_time = get_jiffies_64();
 
 	spin_lock(&cpufreq_stats_lock);
-	stat = per_cpu(cpufreq_stats_table, cpu);
 	all_stat = per_cpu(all_cpufreq_stats, cpu);
 	if (!stat) {
 		spin_unlock(&cpufreq_stats_lock);
@@ -98,7 +96,7 @@ static ssize_t show_time_in_state(struct cpufreq_policy *policy, char *buf)
 	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
 	if (!stat)
 		return 0;
-	cpufreq_stats_update(stat->cpu);
+	cpufreq_stats_update(stat);
 	for (i = 0; i < stat->state_num; i++) {
 		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
 			(unsigned long long)
@@ -167,6 +165,7 @@ static ssize_t show_all_time_in_state(struct kobject *kobj,
 {
 	ssize_t len = 0;
 	unsigned int i, cpu, freq, index;
+	struct cpufreq_stats *stat;
 	struct all_cpufreq_stats *all_stat;
 	struct cpufreq_policy *policy;
 
@@ -174,7 +173,7 @@ static ssize_t show_all_time_in_state(struct kobject *kobj,
 	for_each_possible_cpu(cpu) {
 		len += scnprintf(buf + len, PAGE_SIZE - len, "cpu%d\t\t", cpu);
 		if (cpu_online(cpu))
-			cpufreq_stats_update(cpu);
+			cpufreq_stats_update(stat);
 	}
 
 	if (!all_freq_table)
@@ -214,7 +213,7 @@ static ssize_t show_trans_table(struct cpufreq_policy *policy, char *buf)
 	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
 	if (!stat)
 		return 0;
-	cpufreq_stats_update(stat->cpu);
+	cpufreq_stats_update(stat);
 	len += snprintf(buf + len, PAGE_SIZE - len, "   From  :    To\n");
 	len += snprintf(buf + len, PAGE_SIZE - len, "         : ");
 	for (i = 0; i < stat->state_num; i++) {
@@ -643,7 +642,7 @@ static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
 	if (old_index == -1 || new_index == -1)
 		return 0;
 
-	cpufreq_stats_update(freq->cpu);
+	cpufreq_stats_update(stat);
 
 	if (old_index == new_index)
 		return 0;

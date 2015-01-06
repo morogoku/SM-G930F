@@ -26,6 +26,7 @@
 #include <linux/moduleloader.h>
 #include <linux/vmalloc.h>
 #include <linux/random.h>
+#include <asm/alternative.h>
 #include <asm/insn.h>
 #include <asm/sections.h>
 

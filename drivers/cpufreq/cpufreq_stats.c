@@ -21,7 +21,6 @@
 static spinlock_t cpufreq_stats_lock;
 
 struct cpufreq_stats {
-	unsigned int cpu;
 	unsigned int total_trans;
 	unsigned long long last_time;
 	unsigned int max_state;
@@ -368,7 +367,6 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
 	if (ret)
 		goto error_out;
 
-	stats->cpu = cpu;
 	policy->stats = stats;
 
 	alloc_size = count * sizeof(int) + count * sizeof(u64);
@@ -403,11 +401,6 @@ error_out:
 	kfree(stats);
 	policy->stats = NULL;
 	return ret;
-}
-
-static void cpufreq_stats_update_policy_cpu(struct cpufreq_policy *policy)
-{
-	policy->stats->cpu = policy->cpu;
 }
 
 static void cpufreq_powerstats_create(unsigned int cpu,
@@ -580,11 +573,6 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
 	struct cpufreq_policy *policy = data;
 	struct cpufreq_frequency_table *table, *pos;
 	unsigned int cpu_num, cpu = policy->cpu;
-
-	if (val == CPUFREQ_UPDATE_POLICY_CPU) {
-		cpufreq_stats_update_policy_cpu(policy);
-		return 0;
-	}
 
 	table = cpufreq_frequency_get_table(cpu);
 	if (!table)

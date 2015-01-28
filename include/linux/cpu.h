@@ -91,9 +91,11 @@ enum {
 					* Called on the new cpu, just before
 					* enabling interrupts. Must not sleep,
 					* must not fail */
-#define CPU_DOWN_LATE_PREPARE	0x000B
+#define CPU_DYING_IDLE		0x000B /* CPU (unsigned)v dying, reached
+					* idle loop. */
 #define CPU_BROKEN		0x000C /* CPU (unsigned)v did not die properly,
 					* perhaps due to preemption. */
+#define CPU_DOWN_LATE_PREPARE	0x000D
 
 /* Used for CPU hotplug events occurring while tasks are frozen due to a suspend
  * operation in progress

@@ -1464,7 +1464,6 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
 	write_lock_irqsave(&cpufreq_driver_lock, flags);
 	policy = per_cpu(cpufreq_cpu_data, cpu);
 	per_cpu(cpufreq_cpu_data, cpu) = NULL;
-
 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
 	if (!policy) {

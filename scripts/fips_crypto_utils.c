@@ -2,7 +2,7 @@
  * Utility functions called from fips_crypto_hmac.sh.
  *
  * executed during Kernel build
- *
+ * 
  *
  * Author : Rohit Kothari (r.kothari@samsung.com)
  * Date	  : 11 Feb 2014
@@ -14,6 +14,83 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define SHA256_DIGEST_SIZE 32
+
+/*  
+ * Given a vmlinux file, overwrites bytes at given offset with hmac bytes, available in 
+ * hmac file.
+ * Return 0, if Success
+ *       -1, if Error
+ */
+int
+update_crypto_hmac (const char * vmlinux_path, const char * hmac_path, unsigned long offset)
+{
+	FILE * vmlinux_fp = NULL;
+	FILE * hmac_fp = NULL;
+	int i = 0, j = 0;
+	unsigned char hmac[SHA256_DIGEST_SIZE];
+
+	if (!vmlinux_path || !hmac_path || !offset)
+	{
+		printf ("FIPS update_crypto_hmac : Invalid Params");
+		return -1;
+	}
+
+	vmlinux_fp  = fopen (vmlinux_path, "r+b");
+	if (!vmlinux_fp)
+	{
+		printf ("Unable to open vmlinux file ");
+		return -1;
+	}	
+
+	hmac_fp = fopen (hmac_path, "rb"); 
+
+	if (!hmac_fp)
+	{
+		printf ("Unable to open hmac file ");
+		fclose (vmlinux_fp);
+		return -1;
+	}	
+
+	if (SHA256_DIGEST_SIZE != fread (&hmac, sizeof(unsigned char), SHA256_DIGEST_SIZE, hmac_fp)) 
+	{
+		printf ("Unable to read %d bytes from hmac file", SHA256_DIGEST_SIZE);
+		fclose (hmac_fp);
+		fclose (vmlinux_fp);
+		return -1;
+	}
+
+#if 0
+	printf ("Hash : ");
+	for (i = 0; i < sizeof(hmac); i++)
+		printf ("%02x ", hmac[i]);
+	printf ("\n");
+
+	printf ("Offset : %ld", offset);
+#endif
+
+	if (fseek (vmlinux_fp, offset, SEEK_SET) != 0 )
+	{
+		printf ("Unable to seek into vmlinux file.");
+		fclose (hmac_fp);
+		fclose (vmlinux_fp);
+		return -1;
+	}
+
+	if (SHA256_DIGEST_SIZE !=  fwrite (hmac, sizeof(unsigned char), SHA256_DIGEST_SIZE, vmlinux_fp))
+	{
+		printf ("Unable to write %d byte into vmlinux", SHA256_DIGEST_SIZE);
+		fclose (hmac_fp);
+		fclose (vmlinux_fp);
+		return -1;
+	}
+
+	fclose (vmlinux_fp);
+	fclose (hmac_fp);
+
+	return 0;
+}
 
 /*
  * Given a vmlinux file, dumps "size" bytes from given "offset" to output file
@@ -98,83 +175,6 @@ collect_crypto_bytes (const char * in_file, const char * section_name, unsigned 
 	return 0;
 }
 
-#define SHA256_DIGEST_SIZE 32
-
-/*
- * Given a vmlinux file, overwrites bytes at given offset with hmac bytes, available in
- * hmac file.
- * Return 0, if Success
- *       -1, if Error
- */
-int
-update_crypto_hmac (const char * vmlinux_path, const char * hmac_path, unsigned long offset)
-{
-	FILE * vmlinux_fp = NULL;
-	FILE * hmac_fp = NULL;
-	int i = 0, j = 0;
-	unsigned char hmac[SHA256_DIGEST_SIZE];
-
-	if (!vmlinux_path || !hmac_path || !offset)
-	{
-		printf ("FIPS update_crypto_hmac : Invalid Params");
-		return -1;
-	}
-
-	vmlinux_fp  = fopen (vmlinux_path, "r+b");
-	if (!vmlinux_fp)
-	{
-		printf ("Unable to open vmlinux file ");
-		return -1;
-	}
-
-	hmac_fp = fopen (hmac_path, "rb");
-
-	if (!hmac_fp)
-	{
-		printf ("Unable to open hmac file ");
-		fclose (vmlinux_fp);
-		return -1;
-	}
-
-	if (SHA256_DIGEST_SIZE != fread (&hmac, sizeof(unsigned char), SHA256_DIGEST_SIZE, hmac_fp))
-	{
-		printf ("Unable to read %d bytes from hmac file", SHA256_DIGEST_SIZE);
-		fclose (hmac_fp);
-		fclose (vmlinux_fp);
-		return -1;
-	}
-
-#if 0
-	printf ("Hash : ");
-	for (i = 0; i < sizeof(hmac); i++)
-		printf ("%02x ", hmac[i]);
-	printf ("\n");
-
-	printf ("Offset : %ld", offset);
-#endif
-
-	if (fseek (vmlinux_fp, offset, SEEK_SET) != 0 )
-	{
-		printf ("Unable to seek into vmlinux file.");
-		fclose (hmac_fp);
-		fclose (vmlinux_fp);
-		return -1;
-	}
-
-	if (SHA256_DIGEST_SIZE !=  fwrite (hmac, sizeof(unsigned char), SHA256_DIGEST_SIZE, vmlinux_fp))
-	{
-		printf ("Unable to write %d byte into vmlinux", SHA256_DIGEST_SIZE);
-		fclose (hmac_fp);
-		fclose (vmlinux_fp);
-		return -1;
-	}
-
-	fclose (vmlinux_fp);
-	fclose (hmac_fp);
-
-	return 0;
-}
-
 int main (int argc, char **argv)
 {
 	if (argc < 2)
@@ -199,11 +199,11 @@ int main (int argc, char **argv)
 			printf ("\n");
 			return -1;
 		}
-
+		
 		vmlinux_file = argv[2];
 		hmac_file    = argv[3];
 		offset       = atol(argv[4]);
-
+		
 		if (!vmlinux_file || !hmac_file || !offset)
 		{
 			printf ("./fips_crypto_utils -u vmlinux_file hmac_file offset");
@@ -252,5 +252,8 @@ int main (int argc, char **argv)
 
 	return -1;
 }
+
+
+
 
 

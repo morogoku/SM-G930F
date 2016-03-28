@@ -44,7 +44,7 @@ MODULE_PARM_DESC(debug, "DNS Resolver debugging mask");
 #ifdef CONFIG_RKP_KDP
 struct cred *dns_resolver_cache;
 #else
-struct const cred *dns_resolver_cache;
+const struct cred *dns_resolver_cache;
 #endif
 
 #define	DNS_ERRORNO_OPTION	"dnserror"

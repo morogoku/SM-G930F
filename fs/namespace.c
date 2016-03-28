@@ -3553,8 +3553,13 @@ bool fs_fully_visible(struct file_system_type *type)
 		/* This mount is not fully visible if it's root directory
 		 * is not the root directory of the filesystem.
 		 */
+#ifdef CONFIG_RKP_NS_PROT
+		if (mnt->mnt->mnt_root != mnt->mnt->mnt_sb->s_root)
+			continue;
+#else
 		if (mnt->mnt.mnt_root != mnt->mnt.mnt_sb->s_root)
 			continue;
+#endif
 
 		/* This mount is not fully visible if there are any child mounts
 		 * that cover anything except for empty directories.

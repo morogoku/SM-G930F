@@ -26,6 +26,38 @@ on fs
     chown radio system /cpefs
     chmod 0771 /cpefs
 
+on property:ril.clatd.v4-rmnet0=up
+    write /sys/class/net/rmnet0/queues/rx-0/rps_cpus 4
+    write /sys/class/net/v4-rmnet0/queues/rx-0/rps_cpus 2
+
+on property:ril.clatd.v4-rmnet1=up
+    write /sys/class/net/rmnet1/queues/rx-0/rps_cpus 4
+    write /sys/class/net/v4-rmnet1/queues/rx-0/rps_cpus 2
+
+on property:ril.clatd.v4-rmnet2=up
+    write /sys/class/net/rmnet2/queues/rx-0/rps_cpus 4
+    write /sys/class/net/v4-rmnet2/queues/rx-0/rps_cpus 2
+
+on property:ril.clatd.v4-rmnet3=up
+    write /sys/class/net/rmnet3/queues/rx-0/rps_cpus 4
+    write /sys/class/net/v4-rmnet3/queues/rx-0/rps_cpus 2
+
+on property:ril.clatd.v4-rmnet4=up
+    write /sys/class/net/rmnet4/queues/rx-0/rps_cpus 4
+    write /sys/class/net/v4-rmnet4/queues/rx-0/rps_cpus 2
+
+on property:ril.clatd.v4-rmnet5=up
+    write /sys/class/net/rmnet5/queues/rx-0/rps_cpus 4
+    write /sys/class/net/v4-rmnet5/queues/rx-0/rps_cpus 2
+
+on property:ril.clatd.v4-rmnet6=up
+    write /sys/class/net/rmnet6/queues/rx-0/rps_cpus 4
+    write /sys/class/net/v4-rmnet6/queues/rx-0/rps_cpus 2
+
+on property:ril.clatd.v4-rmnet7=up
+    write /sys/class/net/rmnet7/queues/rx-0/rps_cpus 4
+    write /sys/class/net/v4-rmnet7/queues/rx-0/rps_cpus 2
+
 service cpboot-daemon /sbin/cbd -d -tss310 -bm -mm -P platform/155a0000.ufs/by-name/RADIO -c platform/155a0000.ufs/by-name/CP_DEBUG
     class main
     user root
@@ -43,6 +75,6 @@ on boot
     chmod 0660 /sys/class/rfkill/rfkill0/state
     chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/state
     chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/type
-	
+
 on property:ro.multisim.simslotcount=*
    write /sys/module/modem_ctrl_ss310ap/parameters/ds_detect ${ro.multisim.simslotcount}

@@ -113,10 +113,12 @@ static unsigned int zswap_low_pool_percent = 25;
 module_param_named(low_pool_percent,
 			zswap_low_pool_percent, uint, 0644);
 
+#ifdef CONFIG_ZSWAP_ENABLE_WRITEBACK
 /* zswap writeback related parameters */
 static unsigned long zswap_writeback_resume; /* jiffies */
 static unsigned int zswap_writeback_interval = 1;
 module_param_named(writeback_interval, zswap_writeback_interval, uint, 0644);
+#endif
 
 /* Compressed storage to use */
 #define ZSWAP_ZPOOL_DEFAULT "zsmalloc"
@@ -133,9 +135,11 @@ module_param_named(compaction_pages, zswap_compaction_pages, uint, 0644);
 /* zpool is shared by all of zswap backend  */
 static struct zpool *zswap_pool;
 
+#ifdef CONFIG_ZSWAP_ENABLE_WRITEBACK
 /* writeback thread */
 static wait_queue_head_t zswap_writebackd_wait;
 static struct task_struct *zswap_writebackd_task;
+#endif
 
 /*********************************
 * compression functions
@@ -676,6 +680,7 @@ static int page_zero_filled(void *ptr)
 	return 1;
 }
 
+#ifdef CONFIG_ZSWAP_ENABLE_WRITEBACK
 static bool __zswap_writeback_ok(struct swap_info_struct *sis)
 {
 	struct gendisk *disk = NULL;
@@ -779,7 +784,6 @@ static int zswap_writebackd(void *arg)
 	return 0;
 }
 
-#ifdef CONFIG_ZSWAP_ENABLE_WRITEBACK
 static void zswap_wakeup_writebackd(void)
 {
 	if (!waitqueue_active(&zswap_writebackd_wait))
@@ -793,7 +797,6 @@ static void zswap_wakeup_writebackd(void)
 	wake_up_interruptible(&zswap_writebackd_wait);
 	zswap_writebackd_wakeup++;
 }
-#endif
 
 static int zswap_writebackd_run(void)
 {
@@ -812,6 +815,12 @@ static int zswap_writebackd_run(void)
 	}
 	return ret;
 }
+#else
+static int zswap_writebackd_run(void)
+{
+	return 0;
+}
+#endif
 
 /*********************************
 * frontswap hooks

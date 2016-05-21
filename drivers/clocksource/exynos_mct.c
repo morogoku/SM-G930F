@@ -614,4 +614,3 @@ static void __init mct_init_ppi(struct device_node *np)
 }
 CLOCKSOURCE_OF_DECLARE(exynos4210, "samsung,exynos4210-mct", mct_init_spi);
 CLOCKSOURCE_OF_DECLARE(exynos4412, "samsung,exynos4412-mct", mct_init_ppi);
-

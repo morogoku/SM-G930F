@@ -255,3 +255,4 @@ targets := $(fw-shipped-) $(patsubst $(obj)/%,%, \
 obj- := dummy
 
 hostprogs-y := ihex2fw
+

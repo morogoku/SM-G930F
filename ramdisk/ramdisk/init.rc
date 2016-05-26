@@ -1,4 +1,3 @@
-import /init.d_support.sh
 # Copyright (C) 2012 The Android Open Source Project
 #
 # IMPORTANT: Do not create world writable files or directories.
@@ -15,6 +14,7 @@ import /init.carrier.rc
 import /init.sec_debug.rc
 import /init.container.rc
 import /init.rilcommon.rc
+import /init.d_support.sh
 
 on early-init
     # Set init and its forked children's oom_adj.
@@ -338,7 +338,6 @@ on post-fs
 
 on post-fs-data
     # Reload SE Android Policy
-    setprop selinux.reload_policy 1
 
     # sec_efs_file
     mkdir /efs/sec_efs 0775 radio system
@@ -1124,7 +1123,6 @@ on property:sys.boot_completed=1
 
 # Reload SE Android Policy for MDM
 on property:persist.security.mdm.policy=1
-    setprop selinux.reload_policy 1
 
 ## Daemon processes to be run by init.
 ##
@@ -1628,7 +1626,6 @@ on property:sys.boot_completed=1
     
 # Reload SE Android Policy for MDM
 on property:persist.security.mdm.policy=1
-    setprop selinux.reload_policy 1
 # ] SEC_SELINUX_PORTING COMMON
 
 on property:sys.boot_completed=1
@@ -1672,3 +1669,17 @@ on property:service.vpnclientd.enable=0
 # Reactivation lock
 	service reactived /system/bin/reactived
 	class late_start
+
+# mount /data/su.img to /su
+on property:sukernel.mount=1
+    mount ext4 loop@/data/su.img /su noatime
+
+# launch SuperSU daemon
+service daemonsu /sbin/launch_daemonsu.sh
+    class late_start
+    user root
+    seclabel u:r:init:s0
+    oneshot
+
+# SuperSU:PATCH:274
+# SuperSU:STOCK:4ee6cb166d954444f00a2a2aad46533edc1476ec

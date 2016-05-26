@@ -13,7 +13,7 @@ BUILD_ROOT_DIR=$BUILD_KERNEL_DIR/..
 BUILD_KERNEL_OUT_DIR=$BUILD_ROOT_DIR/kernel_out/SuperMan
 PRODUCT_OUT=$BUILD_ROOT_DIR/kernel_out
 
-BUILD_CROSS_COMPILE=/Kernel_Folder/UBERTC-aarch64-linux-android-5.3/bin/aarch64-linux-android-
+BUILD_CROSS_COMPILE=/Kernel_Folder/aarch64-linux-gnu-5.3/bin/aarch64-
 BUILD_JOB_NUMBER=`grep processor /proc/cpuinfo|wc -l`
 
 # Default Python version is 2.7

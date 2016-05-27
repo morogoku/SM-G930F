@@ -813,11 +813,9 @@ static int proc_pid_smaps_simple_show(struct seq_file *m, void *v)
 	vma = mm->mmap;
 	while (vma) {
 		memset(&mss, 0, sizeof mss);
-		mss.vma = vma;
 		smaps_walk.mm = vma->vm_mm;
 
-		if (vma->vm_mm && !is_vm_hugetlb_page(vma)) {
-			walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
+		if (walk_page_vma(vma, &smaps_walk)); {
 			mss_total.pss += mss.pss;
 			mss_total.swap_pss += mss.swap_pss;
 		}

@@ -54,11 +54,13 @@ struct all_freq_table {
 static struct all_freq_table *all_freq_table;
 
 static DEFINE_PER_CPU(struct all_cpufreq_stats *, all_cpufreq_stats);
+static DEFINE_PER_CPU(struct cpufreq_stats *, cpufreq_stats_table);
 static DEFINE_PER_CPU(struct cpufreq_power_stats *, cpufreq_power_stats);
 
 static int cpufreq_stats_update(struct cpufreq_stats *stat)
 {
 	struct all_cpufreq_stats *all_stat;
+	unsigned int cpu;
 	unsigned long long cur_time = get_jiffies_64();
 
 	spin_lock(&cpufreq_stats_lock);
@@ -112,13 +114,15 @@ static int get_index_all_cpufreq_stat(struct all_cpufreq_stats *all_stat,
 	return -1;
 }
 
-void acct_update_power(struct task_struct *task, cputime_t cputime) {
+void acct_update_power(struct task_struct *task, cputime_t cputime)
+{
 	struct cpufreq_power_stats *powerstats;
 	struct cpufreq_stats *stats;
 	unsigned int cpu_num, curr;
 
 	if (!task)
 		return;
+
 	cpu_num = task_cpu(task);
 	powerstats = per_cpu(cpufreq_power_stats, cpu_num);
 	stats = per_cpu(cpufreq_stats_table, cpu_num);

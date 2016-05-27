@@ -21,11 +21,12 @@ struct dev_pm_opp {
 	struct list_head node;
 
 	bool available;
+	bool dynamic;
 	unsigned long rate;
 	unsigned long u_volt;
 
 	struct device_opp *dev_opp;
-	struct rcu_head head;
+	struct rcu_head rcu_head;
 };
 
 struct device;
@@ -34,7 +35,8 @@ struct device_opp {
 	struct list_head node;
 
 	struct device *dev;
-	struct srcu_notifier_head head;
+	struct srcu_notifier_head srcu_head;
+	struct rcu_head rcu_head;
 	struct list_head opp_list;
 };
 

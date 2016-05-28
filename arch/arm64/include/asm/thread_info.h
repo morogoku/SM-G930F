@@ -72,8 +72,8 @@ struct thread_info {
 	.exec_domain	= &default_exec_domain,				\
 	.flags		= 0,						\
 	.preempt_count	= INIT_PREEMPT_COUNT,				\
-	.addr_limit	= KERNEL_DS,					\								\
-	INIT_THREAD_INFO_RKP_CFP(tsk)					\
+	.addr_limit	= KERNEL_DS,					\
+    INIT_THREAD_INFO_RKP_CFP(tsk) \
 }
 
 #define init_thread_info	(init_thread_union.thread_info)

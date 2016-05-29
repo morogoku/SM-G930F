@@ -15,6 +15,7 @@
 #include <linux/wakeup_reason.h>
 #include <linux/gpio.h>
 #include <linux/syscore_ops.h>
+#include <linux/io.h>
 #include <asm/psci.h>
 #include <asm/suspend.h>
 

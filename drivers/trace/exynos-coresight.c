@@ -15,6 +15,7 @@
 #include <linux/spinlock.h>
 #include <linux/kallsyms.h>
 #include <linux/of.h>
+#include <linux/io.h>
 
 #include <asm/core_regs.h>
 #include <asm/cputype.h>

@@ -22,6 +22,7 @@
 
 #include <linux/seq_file.h>
 #include <linux/fs.h>
+#include <linux/io.h>
 #include <linux/proc_fs.h>
 #include <linux/device.h>
 #include <linux/smp.h>

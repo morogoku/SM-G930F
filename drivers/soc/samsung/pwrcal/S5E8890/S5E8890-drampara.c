@@ -1,3 +1,4 @@
+#include <linux/io.h>
 #include "../pwrcal-env.h"
 #include "../pwrcal-rae.h"
 #include "S5E8890-sfrbase.h"

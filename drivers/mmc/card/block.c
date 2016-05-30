@@ -2547,7 +2547,7 @@ static void mmc_blk_shutdown(struct device *dev)
 static int mmc_blk_suspend(struct device *dev)
 {
 	struct mmc_blk_data *part_md;
-	struct mmc_blk_data *md = mmc_get_drvdata(card);
+	struct mmc_blk_data *md = dev_get_drvdata(dev);
 	int rc = 0;
 
 	if (md) {

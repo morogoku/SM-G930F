@@ -985,6 +985,76 @@ static inline bool uksm_test_exit(struct mm_struct *mm)
 	return atomic_read(&mm->mm_users) == 0;
 }
 
+static inline unsigned long vma_pool_size(struct vma_slot *slot)
+{
+	return round_up(sizeof(struct rmap_list_entry) * slot->pages,
+			PAGE_SIZE) >> PAGE_SHIFT;
+}
+
+#define CAN_OVERFLOW_U64(x, delta) (U64_MAX - (x) < (delta))
+
+/* must be done with sem locked */
+static int slot_pool_alloc(struct vma_slot *slot)
+{
+	unsigned long pool_size;
+
+	if (slot->rmap_list_pool)
+		return 0;
+
+	pool_size = vma_pool_size(slot);
+	slot->rmap_list_pool = kzalloc(sizeof(struct page *) *
+				       pool_size, GFP_KERNEL);
+	if (!slot->rmap_list_pool)
+		return -ENOMEM;
+
+	slot->pool_counts = kzalloc(sizeof(unsigned int) * pool_size,
+				    GFP_KERNEL);
+	if (!slot->pool_counts) {
+		kfree(slot->rmap_list_pool);
+		return -ENOMEM;
+	}
+
+	slot->pool_size = pool_size;
+	BUG_ON(CAN_OVERFLOW_U64(uksm_pages_total, slot->pages));
+	slot->flags |= UKSM_SLOT_IN_UKSM;
+	uksm_pages_total += slot->pages;
+
+	return 0;
+}
+
+/*
+ * Called after vma is unlinked from its mm
+ */
+void uksm_remove_vma(struct vm_area_struct *vma)
+{
+	struct vma_slot *slot;
+
+	if (!vma->uksm_vma_slot)
+		return;
+
+	spin_lock(&vma_slot_list_lock);
+	slot = vma->uksm_vma_slot;
+	if (!slot)
+		goto out;
+
+	if (slot_in_uksm(slot)) {
+		/**
+		 * This slot has been added by ksmd, so move to the del list
+		 * waiting ksmd to free it.
+		 */
+		list_add_tail(&slot->slot_list, &vma_slot_del);
+	} else {
+		/**
+		 * It's still on new list. It's ok to free slot directly.
+		 */
+		list_del(&slot->slot_list);
+		free_vma_slot(slot);
+	}
+out:
+	vma->uksm_vma_slot = NULL;
+	spin_unlock(&vma_slot_list_lock);
+}
+
 /**
  * Need to do two things:
  * 1. check if slot was moved to del list
@@ -1029,6 +1099,11 @@ static int try_down_read_slot_mmap_sem(struct vma_slot *slot)
 
 	if (down_read_trylock(sem)) {
 		spin_unlock(&vma_slot_list_lock);
+		if (slot_pool_alloc(slot)) {
+			uksm_remove_vma(vma);
+			up_read(sem);
+			return -ENOENT;
+		}
 		return 0;
 	}
 
@@ -1138,35 +1213,6 @@ void uksm_vma_add_new(struct vm_area_struct *vma)
 	spin_unlock(&vma_slot_list_lock);
 }
 
-/*
- * Called after vma is unlinked from its mm
- */
-void uksm_remove_vma(struct vm_area_struct *vma)
-{
-	struct vma_slot *slot;
-
-	if (!vma->uksm_vma_slot)
-		return;
-
-	slot = vma->uksm_vma_slot;
-	spin_lock(&vma_slot_list_lock);
-	if (slot_in_uksm(slot)) {
-		/**
-		 * This slot has been added by ksmd, so move to the del list
-		 * waiting ksmd to free it.
-		 */
-		list_add_tail(&slot->slot_list, &vma_slot_del);
-	} else {
-		/**
-		 * It's still on new list. It's ok to free slot directly.
-		 */
-		list_del(&slot->slot_list);
-		free_vma_slot(slot);
-	}
-	spin_unlock(&vma_slot_list_lock);
-	vma->uksm_vma_slot = NULL;
-}
-
 /*   32/3 < they < 32/2 */
 #define shiftl	8
 #define shiftr	12
@@ -1257,8 +1303,6 @@ static u32 delta_hash(void *addr, int from, int to, u32 hash)
 
 
 
-
-#define CAN_OVERFLOW_U64(x, delta) (U64_MAX - (x) < (delta))
 
 /**
  *
@@ -2617,7 +2661,7 @@ static int break_ksm(struct vm_area_struct *vma, unsigned long addr)
 		} else
 			ret = VM_FAULT_WRITE;
 		put_page(page);
-	} while (!(ret & (VM_FAULT_WRITE | VM_FAULT_SIGBUS | VM_FAULT_OOM)));
+	} while (!(ret & (VM_FAULT_WRITE | VM_FAULT_SIGBUS | VM_FAULT_SIGSEGV | VM_FAULT_OOM)));
 	/*
 	 * We must loop because handle_mm_fault() may back out if there's
 	 * any difficulty e.g. if pte accessed bit gets updated concurrently.
@@ -4119,9 +4163,10 @@ static void uksm_del_vma_slot(struct vma_slot *slot)
 
 out:
 	slot->rung = NULL;
-	BUG_ON(uksm_pages_total < slot->pages);
-	if (slot->flags & UKSM_SLOT_IN_UKSM)
+	if (slot->flags & UKSM_SLOT_IN_UKSM) {
+		BUG_ON(uksm_pages_total < slot->pages);
 		uksm_pages_total -= slot->pages;
+	}
 
 	if (slot->fully_scanned_round == fully_scanned_round)
 		scanned_virtual_pages -= slot->pages;
@@ -4249,48 +4294,11 @@ static void uksm_calc_scan_pages(void)
 #define __round_mask(x, y) ((__typeof__(x))((y)-1))
 #define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
 
-static inline unsigned long vma_pool_size(struct vma_slot *slot)
-{
-	return round_up(sizeof(struct rmap_list_entry) * slot->pages,
-			PAGE_SIZE) >> PAGE_SHIFT;
-}
-
 static void uksm_vma_enter(struct vma_slot **slots, unsigned long num)
 {
 	struct scan_rung *rung;
-	unsigned long pool_size, i;
-	struct vma_slot *slot;
-	int failed;
 
-	rung = &uksm_scan_ladder[0];
-
-	failed = 0;
-	for (i = 0; i < num; i++) {
-		slot = slots[i];
-
-		pool_size = vma_pool_size(slot);
-		slot->rmap_list_pool = kzalloc(sizeof(struct page *) *
-					       pool_size, GFP_KERNEL);
-		if (!slot->rmap_list_pool)
-			break;
-
-		slot->pool_counts = kzalloc(sizeof(unsigned int) * pool_size,
-					    GFP_KERNEL);
-		if (!slot->pool_counts) {
-			kfree(slot->rmap_list_pool);
-			break;
-		}
-
-		slot->pool_size = pool_size;
-		BUG_ON(CAN_OVERFLOW_U64(uksm_pages_total, slot->pages));
-		slot->flags |= UKSM_SLOT_IN_UKSM;
-		uksm_pages_total += slot->pages;
-	}
-
-	if (i)
-		rung_add_new_slots(rung, slots, i);
-
-	return;
+	rung_add_new_slots(rung, slots, num);
 }
 
 static struct vma_slot *batch_slots[SLOT_TREE_NODE_STORE_SIZE];

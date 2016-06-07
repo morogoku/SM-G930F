@@ -279,9 +279,9 @@ static int propagate_one(struct mount *m)
 	if (IS_ERR(child))
 		return PTR_ERR(child);
 #ifdef CONFIG_RKP_NS_PROT
-	rkp_reset_mnt_flags(q->mnt,MNT_LOCKED);
+	rkp_reset_mnt_flags(child->mnt,MNT_LOCKED);
 #else
-	q->mnt.mnt_flags &= ~MNT_LOCKED;
+	child->mnt.mnt_flags &= ~MNT_LOCKED;
 #endif
 	mnt_set_mountpoint(m, mp, child);
 	last_dest = m;

@@ -1127,7 +1127,8 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
 			flags |= MNT_LOCK_NOEXEC;
 	}
 	/* Don't allow unprivileged users to reveal what is under a mount */
-	if ((flag & CL_UNPRIVILEGED) && list_empty(&old->mnt_expire))
+	if ((flag & CL_UNPRIVILEGED) &&
+	    (!(flag & CL_EXPIRE) || list_empty(&old->mnt_expire)))
 		flags |= MNT_LOCKED;
 	rkp_assign_mnt_flags(mnt->mnt,flags);
 #else

@@ -446,6 +446,8 @@ wifioffload                                 u:object_r:system_service:s0
 com.skt.tbase.INativeService                u:object_r:tbased_service:s0
 ############ carrier_att
 com.smartcom.root.APNWidgetRootService      u:object_r:system_app_service:s0
+############ carrier_vzw
+vzwimsapiservice                            u:object_r:system_app_service:s0
 ############ carrier_jpn
 # OSV models
 DeviceManager3LM                            u:object_r:system_service:s0
@@ -475,4 +477,7 @@ felica                                      u:object_r:nfc_service:s0
 
 #IPM service
 sam.sruk.ipm                              u:object_r:ipm_service:s0
+
+## Service name "MSCS" change to "DisplaySolution"
+DisplaySolution                             u:object_r:displaysolution_service:s0
 
